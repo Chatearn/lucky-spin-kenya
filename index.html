@@ -1,1 +1,243 @@
 
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lucky Spin Kenya</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,sans-serif;background:#eff8f1;color:#12352a}
+header{background:#064e3b;color:white;text-align:center;padding:22px 12px}
+header h1{margin:0;font-size:27px}
+header p{margin:8px 0 0}
+main{max-width:900px;margin:20px auto;padding:12px}
+.card{background:white;border-radius:18px;padding:20px;margin-bottom:18px;box-shadow:0 5px 20px #0000000d;text-align:center}
+#wheel{width:min(100%,370px);height:auto;display:block;margin:12px auto}
+button{border:0;border-radius:12px;padding:14px 18px;font-size:16px;font-weight:bold;cursor:pointer}
+#spin{background:#fbbf24;color:#26351d;width:min(100%,320px)}
+#spin:disabled{opacity:.5}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.stat{background:#edf8f0;padding:14px;border-radius:12px}
+.stat span{display:block;font-size:13px;color:#52685b;margin-bottom:7px}
+.stat strong{font-size:22px;color:#047857}
+#result{display:none;background:#e4f8eb;padding:15px;border-radius:12px;margin-top:15px;line-height:1.5}
+#result.show{display:block}
+.fee{background:#fff8df;border:1px solid #f1df9c;padding:15px;border-radius:12px;text-align:left;line-height:1.8}
+.primary{background:#047857;color:white;width:100%;margin-top:12px}
+.secondary{background:#e8f0eb;color:#064e3b;width:100%;margin-top:8px}
+ul{padding-left:20px;text-align:left;line-height:1.8}
+footer{text-align:center;color:#65766b;font-size:12px;padding:12px 20px 28px}
+</style>
+</head>
+<body>
+<header>
+  <h1>🎡 LUCKY SPIN KENYA</h1>
+  <p>Spin for a chance to win prizes in Kenya shillings!</p>
+</header>
+<main>
+  <section class="card">
+    <h2>Spin the Prize Wheel</h2>
+    <p>You have a maximum of four spins. Every spin counts.</p>
+    <canvas id="wheel" width="700" height="700"></canvas>
+    <button id="spin">🎡 SPIN NOW</button>
+    <div id="result" aria-live="polite"></div>
+  </section>
+
+  <section class="card">
+    <h2>Your Prize Summary</h2>
+    <div class="stats">
+      <div class="stat">
+        <span>Demo prize balance</span>
+        <strong id="balance">KSh 0</strong>
+      </div>
+      <div class="stat">
+        <span>Spins remaining</span>
+        <strong id="remaining">4 / 4</strong>
+      </div>
+    </div>
+    <p id="used">0 of 4 spins used</p>
+    <h3>Withdrawal Information</h3>
+    <div class="fee">
+      <div>Demo prize balance: <strong id="feeBalance">KSh 0</strong></div>
+      <div>Proposed withdrawal fee: <strong>KSh 150</strong></div>
+      <div>Estimated balance after fee: <strong id="net">KSh 0</strong></div>
+    </div>
+    <p>Any withdrawal fee and eligibility rules must be disclosed before payment. This prototype does not collect fees or pay out prizes.</p>
+    <button class="primary" id="withdraw">View Withdrawal Terms</button>
+    <button class="secondary" id="reset">Reset Demo</button>
+  </section>
+
+  <section class="card">
+    <h2>Spin History</h2>
+    <ul id="history"><li>No spins yet</li></ul>
+  </section>
+
+  <section class="card">
+    <h2>How It Works</h2>
+    <ul>
+      <li>Spinning is free in this prototype.</li>
+      <li>Prize segments show KSh 500, KSh 1,000, KSh 1,500, KSh 2,000, KSh 2,500, and SPIN AGAIN.</li>
+      <li>You can spin up to four times.</li>
+      <li>SPIN AGAIN uses one of your four spins and adds no money.</li>
+      <li>Cash prize labels are simulated demo results, not guaranteed or payable winnings.</li>
+      <li>Real withdrawals require a secure backend and verified payment processing.</li>
+    </ul>
+  </section>
+</main>
+<footer>Lucky Spin Kenya · Demo prototype · No real payments or payouts are processed.</footer>
+
+<script>
+const prizes=[
+ {label:"KSh 500",amount:500,color:"#0f766e"},
+ {label:"KSh 1,000",amount:1000,color:"#f59e0b"},
+ {label:"KSh 1,500",amount:1500,color:"#2563eb"},
+ {label:"KSh 2,000",amount:2000,color:"#ea580c"},
+ {label:"KSh 2,500",amount:2500,color:"#7c3aed"},
+ {label:"SPIN AGAIN",amount:0,color:"#db2777"}
+];
+const canvas=document.getElementById("wheel");
+const ctx=canvas.getContext("2d");
+const spinButton=document.getElementById("spin");
+const result=document.getElementById("result");
+let rotation=0,spins=0,balance=0,spinning=false;
+let history=[];
+
+function money(n){
+ return "KSh "+n.toLocaleString("en-KE");
+}
+function drawWheel(){
+ const c=350,r=325,arc=2*Math.PI/prizes.length;
+ ctx.clearRect(0,0,700,700);
+ ctx.save();
+ ctx.translate(c,c);
+ ctx.rotate(rotation);
+ prizes.forEach((p,i)=>{
+  const start=i*arc-Math.PI/2;
+  ctx.beginPath();
+  ctx.moveTo(0,0);
+  ctx.arc(0,0,r,start,start+arc);
+  ctx.closePath();
+  ctx.fillStyle=p.color;
+  ctx.fill();
+  ctx.strokeStyle="#fff";
+  ctx.lineWidth=7;
+  ctx.stroke();
+  ctx.save();
+  ctx.rotate(start+arc/2);
+  ctx.fillStyle="#fff";
+  ctx.textAlign="right";
+  ctx.textBaseline="middle";
+  ctx.font=p.amount===0?"bold 26px Arial":"bold 29px Arial";
+  ctx.fillText(p.label,r-25,0);
+  ctx.restore();
+ });
+ ctx.beginPath();
+ ctx.arc(0,0,58,0,2*Math.PI);
+ ctx.fillStyle="#fff";
+ ctx.fill();
+ ctx.lineWidth=9;
+ ctx.strokeStyle="#064e3b";
+ ctx.stroke();
+ ctx.fillStyle="#064e3b";
+ ctx.textAlign="center";
+ ctx.textBaseline="middle";
+ ctx.font="bold 23px Arial";
+ ctx.fillText("SPIN",0,0);
+ ctx.restore();
+
+ // Fixed pointer at the top
+ ctx.beginPath();
+ ctx.moveTo(350,4);
+ ctx.lineTo(322,52);
+ ctx.lineTo(378,52);
+ ctx.closePath();
+ ctx.fillStyle="#10251d";
+ ctx.fill();
+}
+function update(){
+ document.getElementById("balance").textContent=money(balance);
+ document.getElementById("feeBalance").textContent=money(balance);
+ document.getElementById("net").textContent=money(Math.max(0,balance-150));
+ document.getElementById("remaining").textContent=(4-spins)+" / 4";
+ document.getElementById("used").textContent=spins+" of 4 spins used";
+ spinButton.disabled=spinning||spins>=4;
+ spinButton.textContent=spins>=4?"SPINS FINISHED":spinning?"SPINNING…":"🎡 SPIN NOW";
+}
+function showResult(p){
+ result.style.display="block";
+ result.className="show";
+ if(p.amount>0){
+  result.innerHTML="<strong>You landed on "+p.label+"!</strong><br>Your demo prize balance is now "+money(balance)+".";
+ }else{
+  result.innerHTML="<strong>SPIN AGAIN!</strong><br>This uses one of your four spins. Your balance stays "+money(balance)+".";
+ }
+}
+function renderHistory(){
+ const list=document.getElementById("history");
+ list.replaceChildren();
+ if(history.length===0){
+  const li=document.createElement("li");
+  li.textContent="No spins yet";
+  list.appendChild(li);
+  return;
+ }
+ history.forEach((p,i)=>{
+  const li=document.createElement("li");
+  li.textContent="Spin "+(i+1)+": "+p.label;
+  list.appendChild(li);
+ });
+}
+spinButton.addEventListener("click",()=>{
+ if(spinning||spins>=4)return;
+ spinning=true;
+ spins++;
+ update();
+ result.style.display="none";
+
+ // Demo-only outcome selection. Production outcomes must be server-validated.
+ const chosen=Math.floor(Math.random()*prizes.length);
+ const p=prizes[chosen];
+ const arc=2*Math.PI/prizes.length;
+ const target=((-(chosen*arc+arc/2)%(2*Math.PI))+2*Math.PI)%(2*Math.PI);
+ const current=((rotation%(2*Math.PI))+2*Math.PI)%(2*Math.PI);
+ const delta=((target-current)%(2*Math.PI)+2*Math.PI)%(2*Math.PI);
+ const start=rotation;
+ const end=rotation+Math.PI*12+delta;
+ const startTime=performance.now();
+ const duration=4000;
+ function animate(now){
+  const t=Math.min(1,(now-startTime)/duration);
+  const eased=1-Math.pow(1-t,4);
+  rotation=start+(end-start)*eased;
+  drawWheel();
+  if(t<1){
+   requestAnimationFrame(animate);
+  }else{
+   rotation=end;
+   drawWheel();
+   spinning=false;
+   if(p.amount>0)balance+=p.amount;
+   history.push(p);
+   renderHistory();
+   showResult(p);
+   update();
+  }
+ }
+ requestAnimationFrame(animate);
+});
+document.getElementById("withdraw").addEventListener("click",()=>{
+ alert("Withdrawal terms\\n\\nProposed fee: KSh 150.\\nEstimated demo balance after fee: "+money(Math.max(0,balance-150))+".\\n\\nThis prototype cannot accept payments or process withdrawals. Demo balances are not payable cash.");
+});
+document.getElementById("reset").addEventListener("click",()=>{
+ if(spinning)return;
+ rotation=0;spins=0;balance=0;history=[];
+ result.style.display="none";
+ renderHistory();drawWheel();update();
+});
+drawWheel();
+update();
+</script>
+</body>
+</html>
